@@ -31,7 +31,7 @@ const Home = ({questions}) => {
 				console.log("Time up")
 			}
 		}
-	}, [seconds])
+	}, [seconds, questions])
 
 	useEffect(() => {
 		if (seconds){
