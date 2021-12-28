@@ -1,19 +1,36 @@
-import fs from "fs"
-import path from "path"
 import { useState, useEffect } from "react"
+import axios from "axios"
 import StyledHome from "../styles/StyledHome"
 
 const maxTime = 10
-const Home = ({questions}) => {
-
+const Home = () => {
+	
+	const [ questions, setQuestions ] = useState(null)
 	const [ seconds, setSeconds ] = useState(0)
 	const [ timeDisplay, setTimeDisplay ] = useState("00:00")
 	const [ currentQuestion, setCurrentQuestion ] = useState(0)
 	const [ answers, setAnswers ] = useState([])
 	const [ answer, setAnswer ] = useState(null)
+
+	const revertToInitialState = () => {
+		setSeconds(0)
+		setQuestions(null)
+		setTimeDisplay("00:00")
+		setCurrentQuestion(0)
+		setAnswers([])
+		setAnswer(null)
+	}
 	
-	const startQuiz = () => {
-		setSeconds(1)
+	const startQuiz = async () => {
+		setQuestions("loading")
+		try {
+			const q = await axios.get("/api/questions")
+			setQuestions(q.data)
+			setSeconds(1)
+		}
+		catch {
+			revertToInitialState()
+		}
 	}
 	
 	const selectOption = option => {
@@ -31,7 +48,7 @@ const Home = ({questions}) => {
 				console.log("Time up")
 			}
 		}
-	}, [seconds, questions])
+	}, [seconds])
 
 	useEffect(() => {
 		if (seconds){
@@ -67,7 +84,7 @@ const Home = ({questions}) => {
 						<div className="title">qui<span>zzs</span></div>
 						<h1>Answer 15 product management questions in 15 minutes</h1>
 						<p className="intro-line">There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you&apos;re done, you will be able to see how you did and share the results.</p>
-						<button type="button" className="start-btn" onClick={startQuiz}>Start Quiz</button>
+						<button type="button" className={`start-btn${questions === "loading" ? " loading" : ""}`} onClick={startQuiz}><img src="/loading.gif" alt="loading"/>Start Quiz</button>
 					</div>
 				</div> : ""
 			}
@@ -104,18 +121,6 @@ const Home = ({questions}) => {
 			}
 		</StyledHome>
 	)
-
-}
-
-export const getServerSideProps = async () => {
-
-	const questions = JSON.parse(fs.readFileSync(path.join(process.cwd(), "public", "questions.json")))
-	
-	return {
-		props: {
-			questions: (questions && questions.length) ? questions : []
-		}
-	}
 
 }
 

@@ -117,9 +117,29 @@ const StyledHome = styled.div`
                 color: #ffffff;
                 position: relative;
                 cursor: pointer;
+
+                img {
+                    display: inline-block;
+                    vertical-align: middle;
+                    width: 20px;
+                    opacity: 0;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translateX(-50%) translateY(-50%);
+                }
                 
                 &:active {
                     background: #0000ff;
+                }
+
+                &.loading {
+                    color: transparent;
+                    cursor: progress;
+                    
+                    img {
+                        opacity: 1;
+                    }
                 }
                 
                 @media screen and (max-width: 600px){
