@@ -66,7 +66,7 @@ const Home = ({questions}) => {
 					<div className="sub-container">
 						<div className="title">qui<span>zzs</span></div>
 						<h1>Answer 15 product management questions in 15 minutes</h1>
-						<p className="intro-line">There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you're done, you will be able to see how you did and share the results.</p>
+						<p className="intro-line">There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you&apos;re done, you will be able to see how you did and share the results.</p>
 						<button type="button" className="start-btn" onClick={startQuiz}>Start Quiz</button>
 					</div>
 				</div> : ""
