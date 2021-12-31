@@ -10,10 +10,10 @@ const handler = (req, res) => {
             .status(200)
             .json(questions)
         }
-        catch {
+        catch (err) {
             res
             .status(500)
-            .send("SERVER ERROR")
+            .send(err)
         }
     }
     else {
