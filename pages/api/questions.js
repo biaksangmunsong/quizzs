@@ -5,7 +5,7 @@ const handler = (req, res) => {
 
     if (req.method === "GET"){
         try {
-            const questions = JSON.parse(fs.readFileSync(path.join(process.cwd(), "pages", "api", "questions.json")))
+            const questions = JSON.parse(fs.readFileSync(path.join(process.cwd(), "res", "questions.json")))
             res
             .status(200)
             .json(questions)
