@@ -1,35 +1,124 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
+import Head from "next/head"
 import axios from "axios"
+import Share from "../components/Share"
+import Result from "../components/Result"
 import StyledHome from "../styles/StyledHome"
 
-const maxTime = 10
+const maxTime = 900 // in seconds
+const retestTimeout = 60 // in seconds
 const Home = () => {
 	
+	const metaData = {
+		title: "Answer 15 product management questions in 15 minutes",
+		description: "There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you're done, you will be able to see how you did and share the results."
+	}
+	
 	const [ questions, setQuestions ] = useState(null)
-	const [ seconds, setSeconds ] = useState(0)
+	const [ seconds, setSeconds ] = useState(-1)
+	const [ startTime, setStartTime ] = useState(null)
+	const secondsRef = useRef(0)
 	const [ timeDisplay, setTimeDisplay ] = useState("00:00")
 	const [ currentQuestion, setCurrentQuestion ] = useState(0)
-	const [ answers, setAnswers ] = useState([])
+	const answers = useRef([])
 	const [ answer, setAnswer ] = useState(null)
-
+	const [ result, setResult ] = useState(null)
+	const [ canTakeTest, setCanTakeTest ] = useState(0)
+	const [ lastTestTime, setLastTestTime ] = useState(Date.now())
+	const [ lastTestTimeDisplay, setLastTestTimeDisplay ] = useState("00:00")
+	const [ textToShare, setTextToShare ] = useState(null)
+	
 	const revertToInitialState = () => {
-		setSeconds(0)
-		setQuestions(null)
+		setStartTime(null)
+		setSeconds(-1)
 		setTimeDisplay("00:00")
 		setCurrentQuestion(0)
-		setAnswers([])
+		answers.current = []
 		setAnswer(null)
+		setQuestions(null)
+		setCanTakeTest(0)
+		setLastTestTime(Date.now())
+		setLastTestTimeDisplay("00:00")
+	}
+	
+	const changeLastTest = () => {
+		const time = Date.now()
+		if (window && window.Storage !== undefined){
+			window.localStorage.setItem("last-test", String(time))
+		}
 	}
 	
 	const startQuiz = async () => {
-		setQuestions("loading")
-		try {
-			const q = await axios.get("/api/questions")
-			setQuestions(q.data)
-			setSeconds(1)
+		let lastTest, ctt
+		if (window && window.Storage !== undefined){
+			lastTest = Number(window.localStorage.getItem("last-test"))
 		}
-		catch {
-			revertToInitialState()
+		const currentTime = Date.now()
+		if (lastTest){
+			setLastTestTime(lastTest)
+			const timePassed = (currentTime-lastTest)/1000 // in seconds
+			if (timePassed >= retestTimeout){
+				setCanTakeTest(1)
+				ctt = 1
+			}
+			else {
+				setCanTakeTest(2)
+				ctt = 2
+			}
+		}
+		else {
+			setCanTakeTest(1)
+			ctt = 1
+		}
+		
+		if (!questions && ctt === 1){
+			setQuestions("loading")
+			try {
+				const q = await axios.get("/api/questions")
+				setQuestions(q.data)
+				setStartTime(Date.now())
+				setSeconds(0)
+
+				changeLastTest()
+			}
+			catch {
+				revertToInitialState()
+			}
+		}
+	}
+
+	const quit = () => {
+		if (seconds < maxTime && answers.current.length < questions.length){
+			if (confirm("Are you sure you want to quit the test?")){
+				secondsRef.current = -1
+				revertToInitialState()
+
+				changeLastTest()
+			}
+		}
+	}
+	
+	const next = async (qid, aid) => {
+		if (seconds < maxTime && qid && aid){
+			if (answers.current.length < questions.length){
+				answers.current = [...answers.current, {qid, aid}]
+				if (qid < questions.length){
+					setCurrentQuestion(currentQuestion+1)
+				}
+			}
+			if (qid === questions.length && result !== "loading"){
+				setResult("loading")
+				changeLastTest()
+				try {
+					const req = await axios.post("/api/result", answers.current)
+					const res = req.data
+					console.log(res)
+					setResult(res)
+				}
+				catch {
+					setResult(null)
+				}
+			}
 		}
 	}
 	
@@ -38,23 +127,27 @@ const Home = () => {
 	}
 	
 	useEffect(() => {
-		if (seconds > 0 && questions && questions.length){
+		if (startTime && questions && questions.length && answers.current.length < questions.length && canTakeTest === 1){
+			secondsRef.current = seconds
+
 			if (seconds < maxTime){
 				setTimeout(() => {
-					setSeconds(seconds+1)
+					if (secondsRef.current > -1){
+						const timeNow = Date.now()
+						const secondsPassed = Math.floor((timeNow-startTime)/1000)
+						setSeconds(secondsPassed)
+					}
 				}, 1000)
 			}
-			else {
-				console.log("Time up")
-			}
 		}
-	}, [seconds])
+	}, [startTime, seconds, questions, canTakeTest])
 
 	useEffect(() => {
-		if (seconds){
+		if (seconds > -1){
 			if (seconds < maxTime){
-				let min = Math.floor(seconds/60)
-				let sec = seconds-(min*60)
+				const timeRemaining = maxTime - seconds
+				let min = Math.floor(timeRemaining/60)
+				let sec = timeRemaining-(min*60)
 
 				if (min < 10){
 					min = `0${min}`
@@ -67,6 +160,7 @@ const Home = () => {
 			}
 			else {
 				setTimeDisplay("Time up")
+				changeLastTest()
 			}
 		}
 	}, [seconds])
@@ -75,10 +169,52 @@ const Home = () => {
 		setAnswer(null)
 	}, [currentQuestion])
 	
+	useEffect(() => {
+		if (window){
+			window.onbeforeunload = (seconds > -1 && seconds < maxTime && answers.current.length < questions.length && canTakeTest === 1) ? e => {
+				changeLastTest()
+				e.returnValue = "You are about to quit the test!"
+			} : null
+		}
+	}, [seconds, questions, canTakeTest])
+
+	useEffect(() => {
+		if (canTakeTest === 2){
+			setTimeout(() => {
+				startQuiz()
+				
+				const currentTime = Date.now()
+				const timePassed = retestTimeout-Math.floor((currentTime-lastTestTime)/1000) // in seconds
+				let min = Math.floor(timePassed/60)
+				let sec = timePassed-(min*60)
+
+				if (min < 10){
+					min = `0${min}`
+				}
+				if (sec < 10){
+					sec = `0${sec}`
+				}
+				
+				setLastTestTimeDisplay(`${min}:${sec}`)
+			}, lastTestTimeDisplay === "00:00" ? 0 : 1000)
+		}
+	}, [canTakeTest, lastTestTime, lastTestTimeDisplay])
+	
 	return (
 		<StyledHome>
+			<Head>
+				<title>{metaData.title}</title>
+                <meta property="og:title" content={metaData.title} key="title"/>
+				<meta name="description" content={metaData.description}/>
+                <meta property="og:description" content={metaData.description} key="description"/>
+				<meta name="viewport" content="initial-scale=1.0, width=device-width" key="viewport"/>
+			</Head>
 			{
-				seconds < 1 ?
+				textToShare ?
+				<Share text={textToShare} exit={() => setTextToShare(null)}/> : ""
+			}
+			{
+				(seconds < 0 && seconds < maxTime && (!result || result === "loading") && canTakeTest === 0) ?
 				<div className="intro">
 					<div className="sub-container">
 						<div className="title">qui<span>zzs</span></div>
@@ -89,15 +225,19 @@ const Home = () => {
 				</div> : ""
 			}
 			{
-				seconds > 0 ?
+				(seconds > -1 && seconds < maxTime && (!result || result === "loading") && canTakeTest === 1) ?
 				<div className="questions">
 					<header>
 						<div className="sub-container">
 							<div className={`timer${seconds >= maxTime ? " up" : ""}`}>{timeDisplay}</div>
+							<div className="current-question">{currentQuestion+1}/{questions.length}</div>
 							<div className="btns">
-								<button type="button" className={`prev${currentQuestion > 0 ? " active" : ""}`}>Prev</button>
-								<button type="button" className="quit active">Quit test</button>
-								<button type="button" className={`next${answer ? " active" : ""}`}>Next</button>
+								<button type="button" className="quit active" onClick={quit}>Quit test</button>
+								<button
+									type="button"
+									className={`next${answer ? " active" : ""}${result === "loading" ? " loading" : ""}`}
+									onClick={() => next(questions[currentQuestion].id, answer)}
+								><img src="/loading.gif" alt="loading"/>Next</button>
 							</div>
 						</div>
 					</header>
@@ -116,6 +256,27 @@ const Home = () => {
 								})
 							}
 						</ul>
+					</div>
+				</div> : ""
+			}
+			{
+				seconds >= maxTime ?
+				<div className="time-up">
+					<div className="sub-container">
+						<h2>Sorry, you&apos;re running out of time! Please come back later.</h2>
+						<button type="button" className="restart-btn" onClick={() => window.location.reload()}>Restart</button>
+					</div>
+				</div> : ""
+			}
+			{
+				(result && result !== "loading") ?
+				<Result data={result} setTextToShare={setTextToShare}/> : ""
+			}
+			{
+				canTakeTest === 2 ?
+				<div className="cannot-take-test">
+					<div className="sub-container">
+						<h2>You can take the test again in <span>{lastTestTimeDisplay}</span></h2>
 					</div>
 				</div> : ""
 			}
