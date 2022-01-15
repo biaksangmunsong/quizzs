@@ -14,23 +14,55 @@ const StyledResult = styled.div`
         @media screen and (max-width: 1100px){
             padding: 5vw 0;
         }
-
-        .title {
+        
+        h1 {
             display: block;
             width: 100%;
             line-height: auto;
-            font-size: 1.5rem;
+            font-size: 2.2rem;
+            text-align: left;
             font-weight: 700;
             color: #222222;
-            text-align: center;
-            margin-bottom: 60px;
-            
-            span {
-                color: #8a2be2;
+
+            @media screen and (max-width: 1000px){
+                font-size: 2rem;
             }
 
+            @media screen and (max-width: 800px){
+                font-size: 1.6rem;
+            }
+
+            @media screen and (max-width: 600px){
+                text-align: center;
+                font-size: 1.4rem;
+            }
+        }
+        
+        .users-name {
+            display: block;
+            width: 100%;
+            line-height: auto;
+            font-size: 16px;
+            text-align: left;
+            font-weight: 700;
+            color: #aaaaaa;
+            margin-bottom: 60px;
+
+            @media screen and (max-width: 1000px){
+                font-size: 15px;
+            }
+            
             @media screen and (max-width: 1100px){
                 margin-bottom: 5vw;
+            }
+
+            @media screen and (max-width: 800px){
+                font-size: 14px;
+            }
+
+            @media screen and (max-width: 600px){
+                text-align: center;
+                font-size: 12px;
             }
         }
         
@@ -56,74 +88,57 @@ const StyledResult = styled.div`
                 text-align: left;
                 position: relative;
                 border-bottom: 1px solid #dddddd;
-                padding: 20px 50px;
+                padding: 20px 100px 20px 50px;
                 
-                .scores {
+                .right {
                     display: inline-block;
                     vertical-align: middle;
                     position: absolute;
                     top: 50%;
                     right: 50px;
                     transform: translateY(-50%);
-
-                    div {
-                        display: inline-block;
-                        vertical-align: middle;
-                        font-family: sans-serif;
-                        text-align: center;
-                        font-size: 80%;
-
-                        &.percentage {
-                            margin-left: 30px;
-
-                            @media screen and (max-width: 800px){
-                                margin-left: 20px;
-                            }
-                            
-                            @media screen and (max-width: 600px){
-                                margin-left: 15px;
-                            }
-                        }
+                    font-family: sans-serif;
+                    text-align: center;
+                    font-size: 80%;
                         
-                        span {
-                            display: block;
-                            width: 100%;
-                            text-align: center;
-                            font-weight: 400;
-                            font-size: 60%;
-                        }
+                    span {
+                        display: block;
+                        width: 100%;
+                        text-align: center;
+                        font-weight: 400;
+                        font-size: 60%;
+                    }
 
-                        strong {
-                            color: #ff0000;
-                            font-size: 140%;
-                            vertical-align: baseline;
-                        }
+                    strong {
+                        color: #ff0000;
+                        font-size: 140%;
+                        vertical-align: baseline;
                     }
                 }
                 
                 @media screen and (max-width: 800px){
                     font-size: 20px;
-                    padding: 20px 40px;
+                    padding: 20px 90px 20px 40px;
 
-                    .scores {
+                    .right {
                         right: 40px;
                     }
                 }
                 
                 @media screen and (max-width: 600px){
                     font-size: 18px;
-                    padding: 15px 5%;
+                    padding: 15px 80px 15px 5%;
                     
-                    .scores {
+                    .right {
                         right: 5%;
                     }
                 }
             }
-            
-            .graph {
+
+            .pie-chart {
                 display: block;
                 width: 100%;
-                position: relative;
+                margin: 0 auto;
                 padding: 50px;
                 
                 @media screen and (max-width: 800px){
@@ -133,149 +148,129 @@ const StyledResult = styled.div`
                 @media screen and (max-width: 600px){
                     padding: 30px 5%;
                 }
-                
-                .category {
-                    display: block;
-                    width: 100%;
-                    margin-bottom: 20px;
-                    position: relative;
-                    z-index: 2;
+
+                .chart {
+                    display: inline-block;
+                    vertical-align: middle;
+                    width: 50%;
                     overflow: visible;
-                    
-                    .name {
-                        display: inline-block;
-                        max-width: 100%;
-                        text-align: right;
-                        line-height: 25px;
-                        font-size: 14px;
-                        color: #444444;
-                        font-weight: 700;
-                        overflow: hidden;
-                        white-space: nowrap;
-                        text-overflow: ellipsis;
-                        
-                        @media screen and (max-width: 600px){
-                            font-size: 12px;
-                        }
+                    position: relative;
+                    border-right: 50px solid transparent;
+                    cursor: pointer;
+
+                    @media screen and (max-width: 800px){
+                        border-right: 40px solid transparent;
+                    }
+
+                    @media screen and (max-width: 600px){
+                        display: block;
+                        width: 100%;
+                        max-width: 300px;
+                        border: 0;
+                        margin: 0 auto 30px auto;
                     }
                     
-                    .bar {
-                        min-width: 1%;
-                        height: 50px;
-                        background: #444444;
-                        position: relative;
-                        overflow: visible;
-                        transition: 1s ease-in-out;
+                    .percentage {
+                        display: block;
+                        width: 100%;
+                        position: absolute;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        text-align: center;
+                        font-weight: 700;
+                        font-size: 20px;
+                        color: #222222;
+                        
+                        strong {
+                            color: #ff0000;
+                            font-size: 140%;
+                            vertical-align: baseline;
+                        }
 
-                        .score {
-                            display: inline-block;
-                            text-align: right;
-                            line-height: 25px;
-                            font-family: sans-serif;
+                        @media screen and (max-width: 1000px){
+                            font-size: 16px;
+                        }
+
+                        @media screen and (max-width: 800px){
                             font-size: 14px;
-                            color: #ffffff;
-                            font-weight: 700;
-                            padding: 0 10px;
-                            position: absolute;
-                            top: 50%;
-                            right: 0;
-                            transform: translateY(-50%);
-
-                            strong {
-                                color: #ff0000;
-                                font-size: 140%;
-                                vertical-align: baseline;
-                            }
-
-                            &.outside {
-                                color: #444444;
-                                transform: translateY(-50%) translateX(100%);
-                            }
-                            
-                            @media screen and (max-width: 600px){
-                                font-size: 12px;
-                            }
                         }
                     }
                 }
 
-                .line-horizontal {
-                    display: block;
-                    width: 100%;
-                    height: 35px;
-                    position: relative;
-                    overflow: visible;
-                    font-size: 0;
-                    margin-top: 50px;
-                    transform: translateY(15%);
-                    
-                    &::before {
-                        content: "";
+                .reference {
+                    display: inline-block;
+                    vertical-align: middle;
+                    width: 50%;
+
+                    @media screen and (max-width: 600px){
                         display: block;
                         width: 100%;
-                        height: 2px;
-                        background: #dddddd;
-                    }
-
-                    @media screen and (max-width: 800px){
-                        margin-top: 40px;
+                        max-width: 300px;
+                        border: 0;
+                        margin: 0 auto;
                     }
                     
-                    @media screen and (max-width: 600px){
-                        margin-top: 30px;
-                    }
-                    
-                    .point {
-                        display: inline-block;
-                        vertical-align: top;
+                    .category {
+                        display: block;
+                        width: 100%;
                         position: relative;
-                        height: 100%;
-                        overflow: visible;
-
-                        &::before {
-                            content: "";
-                            display: block;
-                            width: 2px;
-                            height: 10px;
-                            position: absolute;
-                            top: 0;
-                            right: 0;
-                            background: #dddddd;
+                        padding-left: 30px;
+                        margin-bottom: 15px;
+                        transition: .2s linear;
+                        cursor: pointer;
+                        
+                        &:last-child {
+                            margin-bottom: 0;
                         }
 
-                        &.one {
-                            &::after {
-                                content: "";
-                                display: block;
-                                width: 2px;
-                                height: 10px;
-                                position: absolute;
-                                top: 0;
-                                left: 0;
-                                background: #dddddd;
+                        &.blured {
+                            opacity: .2;
+                            
+                            &.hovered {
+                                opacity: 1;
                             }
                         }
                         
-                        span {
-                            display: inline-block;
-                            line-height: 25px;
-                            font-family: sans-serif;
-                            font-size: 14px;
-                            color: #444444;
-                            font-weight: 700;
-                            text-align: center;
+                        .color-code {
+                            display: block;
+                            width: 20px;
+                            height: 20px;
+                            border-radius: 4px;
                             position: absolute;
-                            top: 10px;
-                            right: 0;
-                            transform: translateX(50%);
-                            
-                            &.zero {
-                                left: 0;
-                                transform: translateX(-50%);
+                            top: 50%;
+                            transform: translateY(-50%);
+                            left: 0;
+                        }
+
+                        .category-title {
+                            display: block;
+                            width: 100%;
+                            line-height: auto;
+                            font-size: 1.2rem;
+                            color: #444444;
+                            text-align: left;
+                            font-weight: 400;
+                        }
+
+                        @media screen and (max-width: 1000px){
+                            .color-code {
+                                width: 18px;
+                                height: 18px;
                             }
-                            
-                            @media screen and (max-width: 600px){
-                                font-size: 12px;
+
+                            .category-title {
+                                font-size: 1rem;
+                            }
+                        }
+
+                        @media screen and (max-width: 600px){
+                            .color-code {
+                                width: 16px;
+                                height: 16px;
+                            }
+
+                            .category-title {
+                                font-size: .9rem;
                             }
                         }
                     }
@@ -296,20 +291,19 @@ const StyledResult = styled.div`
                     padding: 15px 5% 25px 5%;
                 }
 
-                .score,
-                .percentage {
+                .score {
                     display: inline-block;
                     vertical-align: middle;
                     font-family: sans-serif;
-                    text-align: center;
+                    text-align: left;
                     font-size: 20px;
-                    margin-right: 50px;
+                    margin-right: 0;
                     font-weight: 700;
                     
                     span {
                         display: block;
                         width: 100%;
-                        text-align: center;
+                        text-align: left;
                         font-weight: 400;
                         font-size: 60%;
                     }
@@ -331,29 +325,12 @@ const StyledResult = styled.div`
                     }
                 }
 
-                .percentage {
-                    margin-right: 0;
-
-                    strong {
-                        font-size: 140%;
-                        color: #ff0000;
-                    }
-                    
-                    @media screen and (max-width: 800px){
-                        margin-right: 40px;
-                    }
-                    
-                    @media screen and (max-width: 600px){
-                        margin-right: 5%;
-                    }
-                }
-
                 .description {
                     display: block;
                     width: 100%;
-                    line-height: auto;
+                    line-height: 25px;
                     font-size: 16px;
-                    color: #444444;
+                    color: #888888;
                     font-weight: 700;
                     text-align: left;
                     margin-top: 20px;

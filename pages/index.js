@@ -1,19 +1,32 @@
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/router"
 import Head from "next/head"
+import Link from "next/link"
 import axios from "axios"
+import { auth, db } from "../fbinit"
+import { signOut } from "firebase/auth"
+import { useAuthState } from "react-firebase-hooks/auth"
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
 import Share from "../components/Share"
 import Result from "../components/Result"
 import StyledHome from "../styles/StyledHome"
+import StyledHeader from "../styles/StyledHeader"
 
 const maxTime = 900 // in seconds
 const retestTimeout = 60 // in seconds
+
 const Home = () => {
 	
 	const metaData = {
 		title: "Answer 15 product management questions in 15 minutes",
 		description: "There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you're done, you will be able to see how you did and share the results."
 	}
-	
+
+	const router = useRouter()
+
+	const [ authUser, authLoading, authError ] = useAuthState(auth)
+	const [ usersData, setUsersData ] = useState(null)
+	const [ userDataStatus, setUserDataStatus ] = useState("")
 	const [ questions, setQuestions ] = useState(null)
 	const [ seconds, setSeconds ] = useState(-1)
 	const [ startTime, setStartTime ] = useState(null)
@@ -24,9 +37,9 @@ const Home = () => {
 	const [ answer, setAnswer ] = useState(null)
 	const [ result, setResult ] = useState(null)
 	const [ canTakeTest, setCanTakeTest ] = useState(0)
-	const [ lastTestTime, setLastTestTime ] = useState(Date.now())
+	const [ lastTestTime, setLastTestTime ] = useState(null)
 	const [ lastTestTimeDisplay, setLastTestTimeDisplay ] = useState("00:00")
-	const [ textToShare, setTextToShare ] = useState(null)
+	const [ dataToShare, setDataToShare ] = useState(null)
 	
 	const revertToInitialState = () => {
 		setStartTime(null)
@@ -42,20 +55,34 @@ const Home = () => {
 	}
 	
 	const changeLastTest = () => {
-		const time = Date.now()
-		if (window && window.Storage !== undefined){
-			window.localStorage.setItem("last-test", String(time))
+		if (db && authUser){
+			const time = Date.now()
+			const userDataRef = doc(db, "users", authUser.uid)
+			setLastTestTime(time)
+			updateDoc(userDataRef, {
+				lastTest: time
+			})
+		}
+	}
+
+	const signUserOut = async () => {
+		try {
+			if (window.confirm("Sign out?")){
+				await signOut(auth)
+				window.location.reload()
+			}
+		}
+		catch {
+			alert("Something went wrong, Please try again later!")
 		}
 	}
 	
 	const startQuiz = async () => {
-		let lastTest, ctt
-		if (window && window.Storage !== undefined){
-			lastTest = Number(window.localStorage.getItem("last-test"))
-		}
-		const currentTime = Date.now()
-		if (lastTest){
-			setLastTestTime(lastTest)
+		if (usersData){
+			let ctt
+			const lastTest = lastTestTime || usersData.lastTest
+			const currentTime = Date.now()
+			
 			const timePassed = (currentTime-lastTest)/1000 // in seconds
 			if (timePassed >= retestTimeout){
 				setCanTakeTest(1)
@@ -65,24 +92,68 @@ const Home = () => {
 				setCanTakeTest(2)
 				ctt = 2
 			}
-		}
-		else {
-			setCanTakeTest(1)
-			ctt = 1
-		}
-		
-		if (!questions && ctt === 1){
-			setQuestions("loading")
-			try {
-				const q = await axios.get("/api/questions")
-				setQuestions(q.data)
-				setStartTime(Date.now())
-				setSeconds(0)
-
-				changeLastTest()
-			}
-			catch {
-				revertToInitialState()
+			
+			if (!questions && ctt === 1){
+				setQuestions("loading")
+				try {
+					const qs = [
+						{
+							id: 1,
+							question: "A leading OTT player has just been launched in the Indian market. It has a wide variety of content in more than 10 languages and includes movies, TV shows, music and a lot more. The company is very optimistic of its success in India and wants to look at different modes of monetisation. Which of these monetisation model you would NOT propose for the app?",
+							options: [
+								{
+									id: "A",
+									text: "Ad-supported model"
+								},
+								{
+									id: "B",
+									text: "Subscription model"
+								},
+								{
+									id: "C",
+									text: "Referral traffic model"
+								},
+								{
+									id: "D",
+									text: "Content sale model/ App in app model"
+								}
+							]
+						},
+						{
+							id: 2,
+							question: "A few more years down the line, the OTT has seen some difficult times and is seeing a fall in engagement & retention of its users. Which of these is NOT a direct metric to look at while trying to find a solution to this problem?",
+							options: [
+								{
+									id: "A",
+									text: "No of new users who stream at least one content piece after launching the app for the 1st time"
+								},
+								{
+									id: "B",
+									text: "Average no. of hours streamed on the app per month by a user"
+								},
+								{
+									id: "C",
+									text: "Average no. of app crashes per sessionper user"
+								},
+								{
+									id: "D",
+									text: "No. of users who uninstall the app withD7 (Day 7) of installing the app"
+								}
+							]
+						}
+					]
+					const questionsRef = doc(db, "questions", "questions")
+					const q = await getDoc(questionsRef)
+					
+					setQuestions(q.data().questions)
+					setStartTime(Date.now())
+					setSeconds(0)
+					
+					changeLastTest()
+				}
+				catch {
+					revertToInitialState()
+				}
 			}
 		}
 	}
@@ -101,7 +172,7 @@ const Home = () => {
 	const next = async (qid, aid) => {
 		if (seconds < maxTime && qid && aid){
 			if (answers.current.length < questions.length){
-				answers.current = [...answers.current, {qid, aid}]
+				answers.current = [...answers.current, aid]
 				if (qid < questions.length){
 					setCurrentQuestion(currentQuestion+1)
 				}
@@ -110,9 +181,13 @@ const Home = () => {
 				setResult("loading")
 				changeLastTest()
 				try {
-					const req = await axios.post("/api/result", answers.current)
+					const req = await axios.post("/api/result", {
+						usersName: usersData.name,
+						answers: answers.current
+					})
 					const res = req.data
-					console.log(res)
+					const resultRef = doc(db, "results", authUser.uid)
+					await setDoc(resultRef, res)
 					setResult(res)
 				}
 				catch {
@@ -124,6 +199,25 @@ const Home = () => {
 	
 	const selectOption = option => {
 		setAnswer(option)
+	}
+
+	const checkUserExists = async uid => {
+		setUserDataStatus("loading")
+		try {
+			const userDataRef = doc(db, "users", uid)
+			const userData = await getDoc(userDataRef)
+			
+			if (!userData.exists()){
+				router.replace("/signin")
+			}
+			else {
+				setUserDataStatus("ready")
+				setUsersData(userData.data())
+			}
+		}
+		catch {
+			setUserDataStatus("error")
+		}
 	}
 	
 	useEffect(() => {
@@ -179,15 +273,16 @@ const Home = () => {
 	}, [seconds, questions, canTakeTest])
 
 	useEffect(() => {
-		if (canTakeTest === 2){
+		if (canTakeTest === 2 && usersData){
 			setTimeout(() => {
 				startQuiz()
 				
 				const currentTime = Date.now()
-				const timePassed = retestTimeout-Math.floor((currentTime-lastTestTime)/1000) // in seconds
+				const lastTest = lastTestTime || usersData.lastTest
+				const timePassed = retestTimeout-Math.floor((currentTime-lastTest)/1000) // in seconds
 				let min = Math.floor(timePassed/60)
 				let sec = timePassed-(min*60)
-
+				
 				if (min < 10){
 					min = `0${min}`
 				}
@@ -199,28 +294,72 @@ const Home = () => {
 			}, lastTestTimeDisplay === "00:00" ? 0 : 1000)
 		}
 	}, [canTakeTest, lastTestTime, lastTestTimeDisplay])
+
+	useEffect(() => {
+		if (authUser && window){
+			if (window.localStorage.getItem("userDataIncomplete")){
+				return router.replace("/signin")
+			}
+			checkUserExists(authUser.uid)
+		}
+	}, [authUser, authError])
 	
 	return (
 		<StyledHome>
 			<Head>
 				<title>{metaData.title}</title>
-                <meta property="og:title" content={metaData.title} key="title"/>
+				<meta property="og:title" content={metaData.title} key="title"/>
 				<meta name="description" content={metaData.description}/>
-                <meta property="og:description" content={metaData.description} key="description"/>
+				<meta property="og:description" content={metaData.description} key="description"/>
 				<meta name="viewport" content="initial-scale=1.0, width=device-width" key="viewport"/>
 			</Head>
 			{
-				textToShare ?
-				<Share text={textToShare} exit={() => setTextToShare(null)}/> : ""
+				dataToShare ?
+				<Share data={dataToShare} setDataToShare={setDataToShare} exit={() => setDataToShare(null)}/> : ""
 			}
 			{
 				(seconds < 0 && seconds < maxTime && (!result || result === "loading") && canTakeTest === 0) ?
 				<div className="intro">
-					<div className="sub-container">
+					<StyledHeader>
 						<div className="title">qui<span>zzs</span></div>
-						<h1>Answer 15 product management questions in 15 minutes</h1>
-						<p className="intro-line">There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you&apos;re done, you will be able to see how you did and share the results.</p>
-						<button type="button" className={`start-btn${questions === "loading" ? " loading" : ""}`} onClick={startQuiz}><img src="/loading.gif" alt="loading"/>Start Quiz</button>
+						{
+							(!authLoading && !authError && authUser) ?
+							<button type="button" className="sign-out-btn" onClick={signUserOut}>Sign out</button> : ""
+						}
+					</StyledHeader>
+					<div className="sub-container">
+						{
+							userDataStatus === "error" ?
+							<h1>Something went wrong, please try again!</h1> : ""
+						}
+						{
+							authError ?
+							<h1>{authError.message}</h1> :
+							<>
+								<h1>Answer 15 product management questions in 15 minutes</h1>
+								<p className="intro-line">There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you&apos;re done, you will be able to see how you did and share the results.</p>
+							</>
+						}
+						{
+							(!authLoading && !authError && authUser && userDataStatus === "ready") ?
+							<button type="button" className={`call-to-action${questions === "loading" ? " loading" : ""}`} onClick={startQuiz}><img src="/loading.gif" alt="loading"/>Start Quiz</button> :
+							<>
+								{
+									(!authLoading && !authError && !authUser && userDataStatus === "") ?
+									<Link href="/signin">
+										<button type="button" className={`call-to-action${questions === "loading" ? " loading" : ""}`}><img src="/loading.gif" alt="loading"/>Sign in to start</button>
+									</Link> : ""
+								}
+								{
+									((authLoading && !authError && !authUser) || userDataStatus === "loading") ?
+									<button type="button" className="call-to-action loading"><img src="/loading.gif" alt="loading"/>Loading</button> : ""
+								}
+								{
+									((!authLoading && authError && !authUser) || userDataStatus === "error") ?
+									<button type="button" className="call-to-action" onClick={() => window.location.reload()}>Reload</button> : ""
+								}
+							</>
+						}
 					</div>
 				</div> : ""
 			}
@@ -261,20 +400,20 @@ const Home = () => {
 			}
 			{
 				seconds >= maxTime ?
-				<div className="time-up">
+				<div className="message">
 					<div className="sub-container">
 						<h2>Sorry, you&apos;re running out of time! Please come back later.</h2>
-						<button type="button" className="restart-btn" onClick={() => window.location.reload()}>Restart</button>
+						<button type="button" className="call-to-action" onClick={() => window.location.reload()}>Restart</button>
 					</div>
 				</div> : ""
 			}
 			{
-				(result && result !== "loading") ?
-				<Result data={result} setTextToShare={setTextToShare}/> : ""
+				(result && result !== "loading" && usersData && authUser) ?
+				<Result data={result} setDataToShare={setDataToShare} usersName={usersData.name} usersUID={authUser.uid}/> : ""
 			}
 			{
 				canTakeTest === 2 ?
-				<div className="cannot-take-test">
+				<div className="message">
 					<div className="sub-container">
 						<h2>You can take the test again in <span>{lastTestTimeDisplay}</span></h2>
 					</div>

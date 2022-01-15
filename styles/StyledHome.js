@@ -33,26 +33,11 @@ const StyledHome = styled.div`
             max-width: 1000px;
             margin: auto;
             text-align: center;
-            position: static;
+            position: relative;
             z-index: 2;
 
             @media screen and (max-width: 600px){
                 width: 90%;
-            }
-            
-            .title {
-                display: inline-block;
-                font-size: 1.5rem;
-                font-weight: 700;
-                color: #222222;
-                position: absolute;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-
-                span {
-                    color: #8a2be2;
-                }
             }
 
             h1 {
@@ -101,8 +86,8 @@ const StyledHome = styled.div`
                     font-size: 1rem;
                 }
             }
-
-            .start-btn {
+            
+            .call-to-action {
                 display: inline-block;
                 height: 50px;
                 overflow: hidden;
@@ -418,11 +403,12 @@ const StyledHome = styled.div`
         }
     }
 
-    .time-up {
+    .message {
         display: flex;
         width: 100%;
         min-height: 100vh;
-        padding: 60px 0;position: relative;
+        padding: 60px 0;
+        position: relative;
         
         &::before {
             content: "";
@@ -479,7 +465,7 @@ const StyledHome = styled.div`
                 }
             }
             
-            .restart-btn {
+            .call-to-action {
                 display: inline-block;
                 height: 50px;
                 overflow: hidden;
@@ -521,73 +507,6 @@ const StyledHome = styled.div`
                 
                 @media screen and (max-width: 600px){
                     font-size: .8rem;
-                }
-            }
-        }
-    }
-    
-    .cannot-take-test {
-        display: flex;
-        width: 100%;
-        min-height: 100vh;
-        padding: 60px 0;position: relative;
-        
-        &::before {
-            content: "";
-            display: block;
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            z-index: 1;
-            top: 0;
-            left: 0;
-            background-image: url(/pexels-gdtography-911738.jpg);
-            background-position: center;
-            background-size: cover;
-            background-repeat: no-repeat;
-            opacity: .2;
-        }
-
-        .sub-container {
-            display: block;
-            width: 90%;
-            max-width: 1000px;
-            margin: auto;
-            text-align: center;
-            position: relative;
-            z-index: 2;
-
-            h2 {
-                display: block;
-                width: 100%;
-                line-height: auto;
-                font-size: 3.5rem;
-                text-align: center;
-                font-weight: 700;
-                
-                span {
-                    font-family: sans-serif;
-                    color: #ff0000;
-                }
-                
-                @media screen and (max-width: 1200px){
-                    font-size: 3rem;
-                }
-
-                @media screen and (max-width: 1000px){
-                    font-size: 2.6rem;
-                }
-
-                @media screen and (max-width: 600px){
-                    font-size: 2.2rem;
-                }
-                
-                @media screen and (max-width: 500px){
-                    font-size: 2rem;
-                }
-                
-                @media screen and (max-width: 400px){
-                    font-size: 1.9rem;
                 }
             }
         }

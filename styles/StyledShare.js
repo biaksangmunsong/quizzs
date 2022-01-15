@@ -90,6 +90,16 @@ const StyledShare = styled.div`
                 text-overflow: ellipsis;
                 border-bottom: 1px solid #444444;
 
+                &.mobile-only {
+                    display: none;
+                }
+
+                @media screen and (max-width: 1000px){
+                    &.mobile-only {
+                        display: block;
+                    }
+                }
+
                 &:first-child {
                     padding-top: 10px;
                 }
