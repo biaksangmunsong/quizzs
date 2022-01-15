@@ -208,6 +208,7 @@ const Home = () => {
 			const userData = await getDoc(userDataRef)
 			
 			if (!userData.exists()){
+				window.localStorage.setItem("userDataIncomplete", "1")
 				router.replace("/signin")
 			}
 			else {

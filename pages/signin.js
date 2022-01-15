@@ -62,6 +62,7 @@ const SignIn = () => {
             else {
                 setStatus({status: "new-user"})
                 setIsNewUser(true)
+                window.localStorage.setItem("userDataIncomplete", "1")
             }
         }
         catch (error){
@@ -109,7 +110,8 @@ const SignIn = () => {
                 name: usersName,
                 email: emailAddress,
                 phone: phoneNumber,
-                description: desc
+                description: desc,
+                lastTest: Date.now()
             })
             setSubmittingNewUserForm(false)
             window.localStorage.removeItem("userDataIncomplete")
@@ -168,7 +170,6 @@ const SignIn = () => {
                     signInWithEmailLink(auth, emailForSignin, router.asPath)
                     .then(() => {
                         window.localStorage.removeItem("emailForSignin")
-                        window.localStorage.setItem("userDataIncomplete", "1")
                     })
                     .catch(error => {
                         setStatus({status: "error", error})
