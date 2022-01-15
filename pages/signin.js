@@ -33,7 +33,7 @@ const SignIn = () => {
     
     const sendSignInLink = address => {
 		const actionCodeSettings = {
-            url: window.location.href,
+            url: `${window.location.origin}/signin`,
             handleCodeInApp: true
         }
         

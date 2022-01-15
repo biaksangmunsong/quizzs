@@ -3,7 +3,8 @@ import styled from "styled-components"
 const StyledResult = styled.div`
     display: flex;
     width: 100%;
-
+    min-height: 100vh;
+    
     .sub-container {
         display: block;
         width: 90%;

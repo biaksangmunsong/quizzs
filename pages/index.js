@@ -316,7 +316,7 @@ const Home = () => {
 			</Head>
 			{
 				dataToShare ?
-				<Share data={dataToShare} setDataToShare={setDataToShare} exit={() => setDataToShare(null)}/> : ""
+				<Share data={dataToShare} exit={() => setDataToShare(null)}/> : ""
 			}
 			{
 				(seconds < 0 && seconds < maxTime && (!result || result === "loading") && canTakeTest === 0) ?

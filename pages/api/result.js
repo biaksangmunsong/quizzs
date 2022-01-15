@@ -110,7 +110,9 @@ const handler = (req, res) => {
             })
             const categoryPercentage = Math.floor((categoryScore/categoryFull)*100)
             
-            return res.json({
+            return res
+            .status(500)
+            .json({
                 usersName,
                 full,
                 score,

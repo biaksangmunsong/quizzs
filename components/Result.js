@@ -10,7 +10,7 @@ const Result = ({data, setDataToShare, usersName, usersUID}) => {
     const share = () => {
         if (data){
             const text = `Quizzs Result - ${usersName}`
-            const url = `${window.location.href}result/${usersUID}`
+            const url = `${window.location.origin}/result?id=${usersUID}`
             
             if (window && window.navigator.canShare){
                 window.navigator.share({text,url})
