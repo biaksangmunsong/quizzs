@@ -194,60 +194,63 @@ const SignIn = () => {
             <StyledHeader>
                 <div className="title always-centered">qui<span>zzs</span></div>
             </StyledHeader>
-            <main>
-                <div className="sub-container">
-                    {
-                        status.status === "loading" ?
-                        <div className="loading"><img src="/loading-red.gif" alt="loading"/></div> : ""
-                    }
-                    {
-                        status.status === "not-signed-in" ?
-                        <form className="email-form" onSubmit={handleEmailSubmit}>
-                            <h1>Sign in with email</h1>
-                            <h2>Sign in without password, we&apos;ll send you a signin link to your inbox.</h2>
-                            <div className="input-and-button">
-                                <input
-                                    type="email"
-                                    placeholder="Enter email address"
-                                    className="email-input"
-                                    value={email}
-                                    onChange={handleEmailChange}
-                                />
-                                <button type="submit" className={`${emailIsValid ? "active" : ""}${sendingEmail ? " loading" : ""}`}><img src="/loading.gif" alt="loading"/>Send email</button>
-                            </div>
-                            {
-                                emailSent ?
-                                <p className="message success">Email sent! Check your inbox for signin link.</p> : ""
-                            }
-                            {
-                                emailSendError ?
-                                <p className="message error">{emailSendError.message}</p> : ""
-                            }
-                        </form> : ""
-                    }
-                    {
-                        isNewUser ?
-                        <form className="new-user-form" onSubmit={handleNewUserFormSubmit}>
-                            <h1>Almost ready</h1>
-                            <h2>Answer a few more questions and you&apos;re ready to take the test.</h2>
-                            <input type="text" className="short" name="name" placeholder="Full name *" onChange={handleInputChange} value={name} required/>
-                            <input type="text" className="short no-margin" name="phone" placeholder="Phone number" onChange={handleInputChange} value={phone}/>
-                            <select name="description" onChange={handleInputChange} value={description} required>
-                                <option value="">What best describes you?</option>
-                                <option value="Product Manager">Product Manager</option>
-                                <option value="Student">Student</option>
-                                <option value="Professional">Professional</option>
-                            </select>
-                            <input type={description === "Professional" ? "text" : "hidden"} name="profession" placeholder="Your Profession *" onChange={handleInputChange} value={profession} required={description === "Professional" ? true : false}/>
-                            <button type="submit" className={`new-user-submit-btn${submittingNewUserForm ? " loading" : ""}`}><img src="/loading.gif" alt="loading"/>Submit</button>
-                            {
-                                newUserFormError ?
-                                <p className="message error">{newUserFormError.message}</p> : ""
-                            }
-                        </form> : ""
-                    }
-                </div>
-            </main>
+            {
+                status.status !== "error" ?
+                <main>
+                    <div className="sub-container">
+                        {
+                            status.status === "loading" ?
+                            <div className="loading"><img src="/loading-red.gif" alt="loading"/></div> : ""
+                        }
+                        {
+                            status.status === "not-signed-in" ?
+                            <form className="email-form" onSubmit={handleEmailSubmit}>
+                                <h1>Sign in with email</h1>
+                                <h2>Sign in without password, we&apos;ll send you a signin link to your inbox.</h2>
+                                <div className="input-and-button">
+                                    <input
+                                        type="email"
+                                        placeholder="Enter email address"
+                                        className="email-input"
+                                        value={email}
+                                        onChange={handleEmailChange}
+                                    />
+                                    <button type="submit" className={`${emailIsValid ? "active" : ""}${sendingEmail ? " loading" : ""}`}><img src="/loading.gif" alt="loading"/>Send email</button>
+                                </div>
+                                {
+                                    emailSent ?
+                                    <p className="message success">Email sent! Check your inbox for signin link.</p> : ""
+                                }
+                                {
+                                    emailSendError ?
+                                    <p className="message error">{emailSendError.message}</p> : ""
+                                }
+                            </form> : ""
+                        }
+                        {
+                            isNewUser ?
+                            <form className="new-user-form" onSubmit={handleNewUserFormSubmit}>
+                                <h1>Almost ready</h1>
+                                <h2>Answer a few more questions and you&apos;re ready to take the test.</h2>
+                                <input type="text" className="short" name="name" placeholder="Full name *" onChange={handleInputChange} value={name} required/>
+                                <input type="text" className="short no-margin" name="phone" placeholder="Phone number" onChange={handleInputChange} value={phone}/>
+                                <select name="description" onChange={handleInputChange} value={description} required>
+                                    <option value="">What best describes you?</option>
+                                    <option value="Product Manager">Product Manager</option>
+                                    <option value="Student">Student</option>
+                                    <option value="Professional">Professional</option>
+                                </select>
+                                <input type={description === "Professional" ? "text" : "hidden"} name="profession" placeholder="Your Profession *" onChange={handleInputChange} value={profession} required={description === "Professional" ? true : false}/>
+                                <button type="submit" className={`new-user-submit-btn${submittingNewUserForm ? " loading" : ""}`}><img src="/loading.gif" alt="loading"/>Submit</button>
+                                {
+                                    newUserFormError ?
+                                    <p className="message error">{newUserFormError.message}</p> : ""
+                                }
+                            </form> : ""
+                        }
+                    </div>
+                </main> : ""
+            }
             {
 				status.status === "error" ?
                 <div className="page-message">
