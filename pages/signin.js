@@ -111,7 +111,7 @@ const SignIn = () => {
                 email: emailAddress,
                 phone: phoneNumber,
                 description: desc,
-                lastTest: Date.now()
+                lastTest: 0
             })
             setSubmittingNewUserForm(false)
             window.localStorage.removeItem("userDataIncomplete")
