@@ -7,7 +7,7 @@ const StyledShare = styled.div`
     overflow: auto;
     position: fixed;
     z-index: 100;
-    background: rgba(0,0,0,.9);
+    background: rgba(25,40,65,.9);
     padding: 60px 0;
 
     .modal {
@@ -17,7 +17,7 @@ const StyledShare = styled.div`
         margin: auto;
         position: relative;
         z-index: 2;
-        background: #222222;
+        background: #192841;
         border-radius: 10px;
         overflow: hidden;
         border: 1px solid #444444;
@@ -88,8 +88,8 @@ const StyledShare = styled.div`
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
-                border-bottom: 1px solid #444444;
-
+                border-bottom: 1px solid rgba(255,255,255,.1);
+                
                 &.mobile-only {
                     display: none;
                 }

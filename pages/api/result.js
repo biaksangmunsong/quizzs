@@ -62,11 +62,11 @@ const handler = (req, res) => {
     if (req.method === "POST"){
         try {
             const answers = req.body ? req.body.answers : null
-            const usersName = req.body ? req.body.usersName : null
+            const fullName = req.body ? req.body.fullName : null
             const correctAnswers = JSON.parse(process.env.ANSWERS)
             const questionsInCategories = JSON.parse(process.env.CATEGORIES)
             
-            if (!answers || !usersName || answers.length !== correctAnswers.length){
+            if (!answers || !fullName || answers.length !== correctAnswers.length){
                 return res
                 .status(400)
                 .send("BAD REQUEST")
@@ -113,7 +113,7 @@ const handler = (req, res) => {
             return res
             .status(200)
             .json({
-                usersName,
+                fullName,
                 full,
                 score,
                 remark,

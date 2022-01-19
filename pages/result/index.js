@@ -29,106 +29,48 @@ const StyledResultPage = styled.div`
         display: flex;
         width: 100%;
         min-height: 100vh;
-        padding: 60px 0;
-        position: relative;
-        
-        &::before {
-            content: "";
-            display: block;
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            z-index: 1;
-            top: 0;
-            left: 0;
-            background-image: url(/pexels-gdtography-911738.jpg);
-            background-position: center;
-            background-size: cover;
-            background-repeat: no-repeat;
-            opacity: .2;
-        }
+        padding: 50px 0;
 
         .sub-container {
             display: block;
             width: 90%;
-            max-width: 1000px;
+            max-width: 600px;
             margin: auto;
             text-align: center;
-            position: relative;
-            z-index: 2;
-
-            h2 {
+            
+            p {
                 display: block;
                 width: 100%;
-                line-height: auto;
-                font-size: 3.5rem;
+                line-height: 40px;
+                font-size: 30px;
                 text-align: center;
+                color: #ffffff;
                 font-weight: 700;
-                margin-bottom: 40px;
-                
-                @media screen and (max-width: 1200px){
-                    font-size: 3rem;
-                }
-
-                @media screen and (max-width: 1000px){
-                    font-size: 2.6rem;
-                }
 
                 @media screen and (max-width: 600px){
-                    font-size: 2.2rem;
-                }
-                
-                @media screen and (max-width: 500px){
-                    font-size: 2rem;
-                }
-                
-                @media screen and (max-width: 400px){
-                    font-size: 1.9rem;
+                    line-height: 35px;
+                    font-size: 25px;
                 }
             }
-            
-            .call-to-action {
+
+            .cta {
                 display: inline-block;
-                height: 50px;
-                overflow: hidden;
-                padding: 0 50px;
-                font-size: 1rem;
+                padding: 0 30px;
+                line-height: 40px;
+                border: 0;
+                border-radius: 4px;
+                background: #ffffff;
                 text-align: center;
                 font-weight: 700;
-                border: 0;
-                border-radius: 5px;
-                outline: 0;
-                background: #8a2be2;
-                color: #ffffff;
-                position: relative;
-                cursor: pointer;
+                text-transform: uppercase;
+                font-family: "Raleway", sans-serif;
+                color: #222222;
+                font-size: 14px;
+                margin-top: 20px;
 
-                img {
-                    display: inline-block;
-                    vertical-align: middle;
-                    width: 20px;
-                    opacity: 0;
-                    position: absolute;
-                    top: 50%;
-                    left: 50%;
-                    transform: translateX(-50%) translateY(-50%);
-                }
-                
-                &:active {
-                    background: #0000ff;
-                }
-
-                &.loading {
-                    color: transparent;
-                    cursor: progress;
-                    
-                    img {
-                        opacity: 1;
-                    }
-                }
-                
                 @media screen and (max-width: 600px){
-                    font-size: .8rem;
+                    line-height: 38px;
+                    font-size: 13px;
                 }
             }
         }
@@ -138,7 +80,7 @@ const StyledResultPage = styled.div`
 const ResultPage = () => {
     
     const router = useRouter()
-    const [ usersUID, setUsersUID ] = useState("")
+    const [ email, setEmail ] = useState("")
     const [ result, setResult ] = useState(null)
     const [ dataToShare, setDataToShare ] = useState(null)
     const [ metaData, setMetaData ] = useState({
@@ -147,14 +89,14 @@ const ResultPage = () => {
     })
     
     useEffect(() => {
-        if (router.query.id){
-            setUsersUID(router.query.id)
+        if (router.query.email){
+            setEmail(router.query.email)
         }
     }, [router])
-
+    
     useEffect(() => {
-        if (usersUID && db){
-            const resultRef = doc(db, "results", usersUID)
+        if (email && db){
+            const resultRef = doc(db, "results", email)
             getDoc(resultRef).then(result => {
                 if (result.exists()){
                     setResult(result.data())
@@ -166,12 +108,12 @@ const ResultPage = () => {
                 setResult("error")
             })
         }
-    }, [usersUID])
+    }, [email])
 
     useEffect(() => {
         if (result){
             setMetaData({
-                title: `Quizzs Result - ${result.usersName}`,
+                title: `Quizzs Result - ${result.fullName}`,
                 description: `View quiz result of ${result.usersName} on Quizzs`
             })
         }
@@ -185,10 +127,12 @@ const ResultPage = () => {
 				<meta name="description" content={metaData.description}/>
 				<meta property="og:description" content={metaData.description} key="description"/>
 				<meta name="viewport" content="initial-scale=1.0, width=device-width" key="viewport"/>
+                <meta name="msapplication-TileColor" content="#dddddd"/>
+                <meta name="theme-color" content="#dddddd"/>
 			</Head>
             {
                 !result ?
-                <div className="loading"><img src="/loading-red.gif" alt="loading"/></div> : ""
+                <div className="loading"><img src="/loading.gif" alt="loading"/></div> : ""
             }
             {
 				dataToShare ?
@@ -196,14 +140,14 @@ const ResultPage = () => {
 			}
             {
                 (result && typeof(result) !== "string") ?
-                <Result data={result} setDataToShare={setDataToShare} usersName={result.usersName} usersUID={usersUID}/> : ""
+                <Result data={result} setDataToShare={setDataToShare} fullName={result.fullName} email={email}/> : ""
             }
             {
                 result === "error" ?
                 <div className="message">
 					<div className="sub-container">
-						<h2>Something went wrong! Please try again.</h2>
-						<button type="button" className="call-to-action" onClick={() => window.location.reload()}>Reload</button>
+						<p>Something went wrong! Please try again.</p>
+						<button type="button" className="cta" onClick={() => window.location.reload()}>Reload</button>
 					</div>
 				</div> : ""
             }
@@ -211,7 +155,7 @@ const ResultPage = () => {
                 result === "404" ?
                 <div className="message">
 					<div className="sub-container">
-                        <h2>Result not found!</h2>
+                        <p>Result not found!</p>
 					</div>
 				</div> : ""
             }

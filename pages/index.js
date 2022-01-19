@@ -1,310 +1,39 @@
-import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/router"
-import Head from "next/head"
 import Link from "next/link"
-import axios from "axios"
-import { auth, db } from "../fbinit"
-import { signOut } from "firebase/auth"
-import { useAuthState } from "react-firebase-hooks/auth"
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore"
-import Share from "../components/Share"
-import Result from "../components/Result"
+import Head from "next/head"
 import StyledHome from "../styles/StyledHome"
-import StyledHeader from "../styles/StyledHeader"
 
-const maxTime = 900 // in seconds
-const retestTimeout = 60 // in seconds
+const Boundary = () => {
+
+	return (
+		<div className="boundary">
+			<div className="circle"></div>
+		</div>
+	)
+
+}
+
+const CallToAction = ({centered}) => {
+
+	return (
+		<Link href="/test">
+			<a className={`cta${centered ? " centered" : ""}`}>
+				<span>Start Test</span>
+				<svg viewBox="0 0 80 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<polyline points="55,5 75,25 5,25 75,25 55,45" strokeWidth="4"/>
+				</svg>
+			</a>
+		</Link>
+	)
+
+}
 
 const Home = () => {
-	
+
 	const metaData = {
-		title: "Answer 15 product management questions in 15 minutes",
-		description: "There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you're done, you will be able to see how you did and share the results."
-	}
+		title: "Product Management Skills Assessment Test",
+		description: "The first AI-based test that assists you in scoring and evaluating your abilities prior to applying to top product companies. It's free and only takes 45 minutes."
+    }
 
-	const router = useRouter()
-
-	const [ authUser, authLoading, authError ] = useAuthState(auth)
-	const [ usersData, setUsersData ] = useState(null)
-	const [ userDataStatus, setUserDataStatus ] = useState("")
-	const [ questions, setQuestions ] = useState(null)
-	const [ seconds, setSeconds ] = useState(-1)
-	const [ startTime, setStartTime ] = useState(null)
-	const secondsRef = useRef(0)
-	const [ timeDisplay, setTimeDisplay ] = useState("00:00")
-	const [ currentQuestion, setCurrentQuestion ] = useState(0)
-	const answers = useRef([])
-	const [ answer, setAnswer ] = useState(null)
-	const [ result, setResult ] = useState(null)
-	const [ canTakeTest, setCanTakeTest ] = useState(0)
-	const [ lastTestTime, setLastTestTime ] = useState(null)
-	const [ lastTestTimeDisplay, setLastTestTimeDisplay ] = useState("00:00")
-	const [ dataToShare, setDataToShare ] = useState(null)
-	
-	const revertToInitialState = () => {
-		setStartTime(null)
-		setSeconds(-1)
-		setTimeDisplay("00:00")
-		setCurrentQuestion(0)
-		answers.current = []
-		setAnswer(null)
-		setQuestions(null)
-		setCanTakeTest(0)
-		setLastTestTime(Date.now())
-		setLastTestTimeDisplay("00:00")
-	}
-	
-	const changeLastTest = () => {
-		if (db && authUser){
-			const time = Date.now()
-			const userDataRef = doc(db, "users", authUser.uid)
-			setLastTestTime(time)
-			updateDoc(userDataRef, {
-				lastTest: time
-			})
-		}
-	}
-
-	const signUserOut = async () => {
-		try {
-			if (window.confirm("Sign out?")){
-				await signOut(auth)
-				window.location.reload()
-			}
-		}
-		catch {
-			alert("Something went wrong, Please try again later!")
-		}
-	}
-	
-	const startQuiz = async () => {
-		if (usersData){
-			let ctt
-			const lastTest = lastTestTime || usersData.lastTest
-			const currentTime = Date.now()
-			
-			const timePassed = (currentTime-lastTest)/1000 // in seconds
-			if (timePassed >= retestTimeout){
-				setCanTakeTest(1)
-				ctt = 1
-			}
-			else {
-				setCanTakeTest(2)
-				ctt = 2
-			}
-			
-			if (!questions && ctt === 1){
-				setQuestions("loading")
-				try {
-					const qs = [
-						{
-							id: 1,
-							question: "A leading OTT player has just been launched in the Indian market. It has a wide variety of content in more than 10 languages and includes movies, TV shows, music and a lot more. The company is very optimistic of its success in India and wants to look at different modes of monetisation. Which of these monetisation model you would NOT propose for the app?",
-							options: [
-								{
-									id: "A",
-									text: "Ad-supported model"
-								},
-								{
-									id: "B",
-									text: "Subscription model"
-								},
-								{
-									id: "C",
-									text: "Referral traffic model"
-								},
-								{
-									id: "D",
-									text: "Content sale model/ App in app model"
-								}
-							]
-						},
-						{
-							id: 2,
-							question: "A few more years down the line, the OTT has seen some difficult times and is seeing a fall in engagement & retention of its users. Which of these is NOT a direct metric to look at while trying to find a solution to this problem?",
-							options: [
-								{
-									id: "A",
-									text: "No of new users who stream at least one content piece after launching the app for the 1st time"
-								},
-								{
-									id: "B",
-									text: "Average no. of hours streamed on the app per month by a user"
-								},
-								{
-									id: "C",
-									text: "Average no. of app crashes per sessionper user"
-								},
-								{
-									id: "D",
-									text: "No. of users who uninstall the app withD7 (Day 7) of installing the app"
-								}
-							]
-						}
-					]
-					const questionsRef = doc(db, "questions", "questions")
-					const q = await getDoc(questionsRef)
-					
-					setQuestions(q.data().questions)
-					setStartTime(Date.now())
-					setSeconds(0)
-					
-					changeLastTest()
-				}
-				catch {
-					revertToInitialState()
-				}
-			}
-		}
-	}
-
-	const quit = () => {
-		if (seconds < maxTime && answers.current.length < questions.length){
-			if (confirm("Are you sure you want to quit the test?")){
-				secondsRef.current = -1
-				revertToInitialState()
-
-				changeLastTest()
-			}
-		}
-	}
-	
-	const next = async (qid, aid) => {
-		if (seconds < maxTime && qid && aid){
-			if (answers.current.length < questions.length){
-				answers.current = [...answers.current, aid]
-				if (qid < questions.length){
-					setCurrentQuestion(currentQuestion+1)
-				}
-			}
-			if (qid === questions.length && result !== "loading"){
-				setResult("loading")
-				changeLastTest()
-				try {
-					const req = await axios.post("/api/result", {
-						usersName: usersData.name,
-						answers: answers.current
-					})
-					const res = req.data
-					const resultRef = doc(db, "results", authUser.uid)
-					await setDoc(resultRef, res)
-					setResult(res)
-				}
-				catch {
-					setResult(null)
-				}
-			}
-		}
-	}
-	
-	const selectOption = option => {
-		setAnswer(option)
-	}
-
-	const checkUserExists = async uid => {
-		setUserDataStatus("loading")
-		try {
-			const userDataRef = doc(db, "users", uid)
-			const userData = await getDoc(userDataRef)
-			
-			if (!userData.exists()){
-				window.localStorage.setItem("userDataIncomplete", "1")
-				router.replace("/signin")
-			}
-			else {
-				setUserDataStatus("ready")
-				setUsersData(userData.data())
-			}
-		}
-		catch {
-			setUserDataStatus("error")
-		}
-	}
-	
-	useEffect(() => {
-		if (startTime && questions && questions.length && answers.current.length < questions.length && canTakeTest === 1){
-			secondsRef.current = seconds
-
-			if (seconds < maxTime){
-				setTimeout(() => {
-					if (secondsRef.current > -1){
-						const timeNow = Date.now()
-						const secondsPassed = Math.floor((timeNow-startTime)/1000)
-						setSeconds(secondsPassed)
-					}
-				}, 1000)
-			}
-		}
-	}, [startTime, seconds, questions, canTakeTest])
-
-	useEffect(() => {
-		if (seconds > -1){
-			if (seconds < maxTime){
-				const timeRemaining = maxTime - seconds
-				let min = Math.floor(timeRemaining/60)
-				let sec = timeRemaining-(min*60)
-
-				if (min < 10){
-					min = `0${min}`
-				}
-				if (sec < 10){
-					sec = `0${sec}`
-				}
-
-				setTimeDisplay(`${min}:${sec}`)
-			}
-			else {
-				setTimeDisplay("Time up")
-				changeLastTest()
-			}
-		}
-	}, [seconds])
-	
-	useEffect(() => {
-		setAnswer(null)
-	}, [currentQuestion])
-	
-	useEffect(() => {
-		if (window){
-			window.onbeforeunload = (seconds > -1 && seconds < maxTime && answers.current.length < questions.length && canTakeTest === 1) ? e => {
-				changeLastTest()
-				e.returnValue = "You are about to quit the test!"
-			} : null
-		}
-	}, [seconds, questions, canTakeTest])
-
-	useEffect(() => {
-		if (canTakeTest === 2 && usersData){
-			setTimeout(() => {
-				startQuiz()
-				
-				const currentTime = Date.now()
-				const lastTest = lastTestTime || usersData.lastTest
-				const timePassed = retestTimeout-Math.floor((currentTime-lastTest)/1000) // in seconds
-				let min = Math.floor(timePassed/60)
-				let sec = timePassed-(min*60)
-				
-				if (min < 10){
-					min = `0${min}`
-				}
-				if (sec < 10){
-					sec = `0${sec}`
-				}
-				
-				setLastTestTimeDisplay(`${min}:${sec}`)
-			}, lastTestTimeDisplay === "00:00" ? 0 : 1000)
-		}
-	}, [canTakeTest, lastTestTime, lastTestTimeDisplay])
-
-	useEffect(() => {
-		if (authUser && window){
-			if (window.localStorage.getItem("userDataIncomplete")){
-				return router.replace("/signin")
-			}
-			checkUserExists(authUser.uid)
-		}
-	}, [authUser, authError])
-	
 	return (
 		<StyledHome>
 			<Head>
@@ -314,112 +43,76 @@ const Home = () => {
 				<meta property="og:description" content={metaData.description} key="description"/>
 				<meta name="viewport" content="initial-scale=1.0, width=device-width" key="viewport"/>
 			</Head>
-			{
-				dataToShare ?
-				<Share data={dataToShare} exit={() => setDataToShare(null)}/> : ""
-			}
-			{
-				(seconds < 0 && seconds < maxTime && (!result || result === "loading") && canTakeTest === 0) ?
-				<div className="intro">
-					<StyledHeader>
-						<div className="title">qui<span>zzs</span></div>
-						{
-							(!authLoading && !authError && authUser) ?
-							<button type="button" className="sign-out-btn" onClick={signUserOut}>Sign out</button> : ""
-						}
-					</StyledHeader>
-					<div className="sub-container">
-						{
-							userDataStatus === "error" ?
-							<h1>Something went wrong, please try again!</h1> : ""
-						}
-						{
-							authError ?
-							<h1>{authError.message}</h1> :
-							<>
-								<h1>Answer 15 product management questions in 15 minutes</h1>
-								<p className="intro-line">There are 15 multiple choice questions and you will have 15 minutes to complete. All questions are mandatory and there are no negative marking. After you&apos;re done, you will be able to see how you did and share the results.</p>
-							</>
-						}
-						{
-							(!authLoading && !authError && authUser && userDataStatus === "ready") ?
-							<button type="button" className={`call-to-action${questions === "loading" ? " loading" : ""}`} onClick={startQuiz}><img src="/loading.gif" alt="loading"/>Start Quiz</button> :
-							<>
-								{
-									(!authLoading && !authError && !authUser && userDataStatus === "") ?
-									<Link href="/signin">
-										<button type="button" className={`call-to-action${questions === "loading" ? " loading" : ""}`}><img src="/loading.gif" alt="loading"/>Sign in to start</button>
-									</Link> : ""
-								}
-								{
-									((authLoading && !authError && !authUser) || userDataStatus === "loading") ?
-									<button type="button" className="call-to-action loading"><img src="/loading.gif" alt="loading"/>Loading</button> : ""
-								}
-								{
-									((!authLoading && authError && !authUser) || userDataStatus === "error") ?
-									<button type="button" className="call-to-action" onClick={() => window.location.reload()}>Reload</button> : ""
-								}
-							</>
-						}
+			<header>
+				<a href="/" className="title">qui<span>zzs</span></a>
+			</header>
+			<div className="intro">
+				<div className="section">
+					<h1>Product Management Skills Assessment Test</h1>
+					<h2>The first AI-based test that assists you in scoring and evaluating your abilities prior to applying to top product companies. It's free and only takes 45 minutes.</h2>
+					<CallToAction/>
+				</div>
+				<div className="section">
+					<svg viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M273 119L467.856 448.283H78.1443L273 119Z"/>
+						<circle cx="269" cy="704" r="200"/>
+						<circle cx="876" cy="219" r="100"/>
+						<rect x="529" y="630" width="447" height="274"/>
+						<rect x="529" y="577" width="95" height="447" transform="rotate(-90 529 577)"/>
+					</svg>
+				</div>
+			</div>
+			<Boundary/>
+			<section>
+				<h2>Who will gain the most <br/>from this test?</h2>
+				<div className="sections">
+					<div className="section">
+						<h3>Product managers, analysts, and other business development and growth professionals</h3>
+						<p>This test will identify areas in which you have attained a high level of knowledge. Additionally, it will identify areas where you may have blind spots that prevent you from making the most informed decisions.</p>
 					</div>
-				</div> : ""
-			}
-			{
-				(seconds > -1 && seconds < maxTime && (!result || result === "loading") && canTakeTest === 1) ?
-				<div className="questions">
-					<header>
-						<div className="sub-container">
-							<div className={`timer${seconds >= maxTime ? " up" : ""}`}>{timeDisplay}</div>
-							<div className="current-question">{currentQuestion+1}/{questions.length}</div>
-							<div className="btns">
-								<button type="button" className="quit active" onClick={quit}>Quit test</button>
-								<button
-									type="button"
-									className={`next${answer ? " active" : ""}${result === "loading" ? " loading" : ""}`}
-									onClick={() => next(questions[currentQuestion].id, answer)}
-								><img src="/loading.gif" alt="loading"/>Next</button>
-							</div>
-						</div>
-					</header>
-					<div className="question">
-						<h2>{questions[currentQuestion].question}</h2>
-						<ul>
-							{
-								questions[currentQuestion].options.map(option => {
-									return (
-										<li key={option.id}>
-											<div className={`radio${answer === option.id ? " selected" : ""}`} onClick={() => selectOption(option.id)}></div>
-											<span className="option-id" onClick={() => selectOption(option.id)}>{option.id}.</span>
-											<span className="text" onClick={() => selectOption(option.id)}>{option.text}</span>
-										</li>
-									)
-								})
-							}
-						</ul>
+					<div className="section">
+						<h3>Anyone who has come into contact with the product during its various stages of development: designers, marketers, researchers, and other information technology specialists.</h3>
+						<p>You will gain a better understanding of the challenges and roadblocks that arise at various stages of product management. This will assist you in viewing your work in a new light.</p>
 					</div>
-				</div> : ""
-			}
-			{
-				seconds >= maxTime ?
-				<div className="message">
-					<div className="sub-container">
-						<h2>Sorry, you&apos;re running out of time! Please come back later.</h2>
-						<button type="button" className="call-to-action" onClick={() => window.location.reload()}>Restart</button>
+				</div>
+			</section>
+			<Boundary/>
+			<section>
+				<h2>About the test</h2>
+				<div className="sections">
+					<div className="section">
+						<svg viewBox="0 0 959 769" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M250 500C388.071 500 500 388.071 500 250C500 111.929 388.071 0 250 0C111.929 0 0 111.929 0 250C0 388.071 111.929 500 250 500Z" fill="white"/>
+							<path d="M163.962 385.85H145.848C142.245 385.85 138.79 384.419 136.242 381.872C133.694 379.324 132.263 375.868 132.263 372.265V290.755C132.263 287.152 133.694 283.697 136.242 281.149C138.79 278.601 142.245 277.17 145.848 277.17H163.962C167.565 277.17 171.02 278.601 173.568 281.149C176.115 283.697 177.547 287.152 177.547 290.755V372.265C177.547 375.868 176.115 379.324 173.568 381.872C171.02 384.419 167.565 385.85 163.962 385.85V385.85Z" fill="#222222"/>
+							<path d="M290.755 385.851H272.642C269.039 385.851 265.583 384.419 263.035 381.872C260.488 379.324 259.056 375.868 259.056 372.265V236.415C259.056 232.812 260.488 229.357 263.035 226.809C265.583 224.262 269.039 222.83 272.642 222.83H290.755C294.358 222.83 297.813 224.262 300.361 226.809C302.909 229.357 304.34 232.812 304.34 236.415V372.265C304.34 375.868 302.909 379.324 300.361 381.872C297.813 384.419 294.358 385.851 290.755 385.851V385.851Z" fill="#222222"/>
+							<path d="M354.152 385.85H336.039C332.436 385.85 328.98 384.419 326.433 381.871C323.885 379.324 322.454 375.868 322.454 372.265V173.018C322.454 169.415 323.885 165.96 326.433 163.412C328.98 160.864 332.436 159.433 336.039 159.433H354.152C357.755 159.433 361.21 160.864 363.758 163.412C366.306 165.96 367.737 169.415 367.737 173.018V372.265C367.737 375.868 366.306 379.324 363.758 381.871C361.21 384.419 357.755 385.85 354.152 385.85V385.85Z" fill="#222222"/>
+							<path d="M227.359 385.851H209.245C205.642 385.851 202.187 384.419 199.639 381.872C197.092 379.324 195.66 375.868 195.66 372.265V127.735C195.66 124.132 197.092 120.677 199.639 118.129C202.187 115.581 205.642 114.15 209.245 114.15H227.359C230.962 114.15 234.417 115.581 236.965 118.129C239.513 120.677 240.944 124.132 240.944 127.735V372.265C240.944 374.049 240.592 375.816 239.91 377.464C239.227 379.113 238.226 380.61 236.965 381.872C235.703 383.133 234.206 384.134 232.557 384.816C230.909 385.499 229.143 385.851 227.359 385.851V385.851Z" fill="#222222"/>
+							<path d="M222 769C277.228 769 322 724.228 322 669C322 613.772 277.228 569 222 569C166.772 569 122 613.772 122 669C122 724.228 166.772 769 222 769Z" fill="white"/>
+							<path d="M514 769C596.843 769 664 701.843 664 619C664 536.157 596.843 469 514 469C431.157 469 364 536.157 364 619C364 701.843 431.157 769 514 769Z" fill="white"/>
+							<path d="M236.464 649.301C235.238 649.301 234.05 649.727 233.103 650.506C232.155 651.284 231.507 652.366 231.269 653.569C231.03 654.772 231.216 656.02 231.794 657.101C232.373 658.182 233.308 659.029 234.441 659.498C235.574 659.966 236.834 660.027 238.007 659.671C239.181 659.315 240.194 658.563 240.875 657.543C241.555 656.523 241.861 655.299 241.741 654.079C241.62 652.859 241.08 651.718 240.213 650.852C239.72 650.36 239.136 649.969 238.493 649.703C237.849 649.437 237.16 649.3 236.464 649.301Z" fill="#222222"/>
+							<path d="M265.968 628.108V628.09C265.8 627.354 265.43 626.68 264.899 626.143C264.368 625.606 263.698 625.229 262.964 625.052C257.047 623.609 247.738 625.148 237.423 629.278C227.503 633.134 218.428 638.881 210.701 646.199C208.59 648.298 206.63 650.543 204.833 652.916C200.865 652.642 196.886 653.281 193.203 654.785C181.738 659.83 178.464 672.743 177.593 678.044C177.466 678.797 177.516 679.57 177.737 680.301C177.958 681.032 178.345 681.702 178.867 682.259C179.39 682.816 180.033 683.245 180.749 683.513C181.464 683.781 182.232 683.88 182.991 683.802H183.017L195.789 682.408C195.804 682.571 195.822 682.72 195.836 682.857C196 684.414 196.694 685.866 197.802 686.971L204.035 693.208C205.139 694.317 206.591 695.012 208.147 695.176L208.574 695.222L207.184 707.977V708.003C207.117 708.651 207.178 709.307 207.364 709.931C207.551 710.556 207.858 711.138 208.269 711.644C208.68 712.15 209.187 712.57 209.76 712.88C210.334 713.19 210.963 713.384 211.611 713.451C211.764 713.467 211.917 713.476 212.071 713.477C212.347 713.478 212.622 713.455 212.895 713.41C218.226 712.552 231.132 709.317 236.164 697.791C237.655 694.121 238.297 690.16 238.04 686.207C240.425 684.414 242.677 682.454 244.782 680.339C252.095 672.685 257.849 663.681 261.721 653.828C265.829 643.63 267.376 634.252 265.968 628.108ZM244.71 662.833C243.079 664.465 241 665.578 238.737 666.029C236.473 666.481 234.127 666.251 231.994 665.369C229.861 664.486 228.038 662.992 226.755 661.073C225.472 659.155 224.786 656.899 224.785 654.591C224.784 652.283 225.467 650.027 226.748 648.107C228.029 646.187 229.851 644.691 231.983 643.806C234.115 642.922 236.461 642.69 238.725 643.139C240.989 643.588 243.069 644.698 244.702 646.329L244.71 646.338C246.897 648.492 248.139 651.428 248.162 654.498C248.186 657.568 246.988 660.521 244.834 662.709L244.71 662.833Z" fill="#222222"/>
+							<path d="M203.32 694.9C202.552 694.805 201.775 694.993 201.136 695.43C199.867 696.298 198.592 697.156 197.306 697.992C196.747 698.351 196.084 698.512 195.423 698.449C194.761 698.387 194.14 698.103 193.659 697.645C193.178 697.187 192.865 696.581 192.77 695.924C192.675 695.266 192.804 694.596 193.136 694.02L195.548 689.851C195.893 689.346 196.085 688.753 196.101 688.142C196.118 687.531 195.957 686.928 195.639 686.406C195.322 685.884 194.86 685.465 194.31 685.198C193.76 684.932 193.145 684.83 192.538 684.905C189.861 685.243 187.372 686.463 185.463 688.371C184.737 689.1 182.527 691.312 181.337 699.741C180.999 702.162 180.785 704.599 180.698 707.042C180.687 707.459 180.759 707.874 180.909 708.264C181.058 708.653 181.283 709.009 181.571 709.312C181.858 709.614 182.202 709.857 182.583 710.026C182.965 710.196 183.375 710.289 183.793 710.299C183.82 710.3 183.848 710.3 183.875 710.3H183.954C186.399 710.214 188.838 710.002 191.261 709.665C199.694 708.474 201.906 706.262 202.633 705.535C204.55 703.626 205.767 701.125 206.086 698.438C206.188 697.602 205.954 696.76 205.435 696.097C204.917 695.433 204.156 695.003 203.32 694.9V694.9Z" fill="#222222"/>
+							<path d="M759 477C869.457 477 959 387.457 959 277C959 166.543 869.457 77 759 77C648.543 77 559 166.543 559 277C559 387.457 648.543 477 759 477Z" fill="white"/>
+							<path d="M768.581 271.762L758.228 261.405C755.857 259.033 752.643 257.697 749.289 257.688C745.935 257.679 742.714 258.999 740.33 261.358L668.352 327.785C665.71 330.124 664.093 333.408 663.851 336.928C663.775 338.676 664.06 340.422 664.689 342.055C665.317 343.688 666.275 345.174 667.503 346.42L682.967 362.055L682.995 362.082C685.385 364.464 688.618 365.807 691.992 365.818H692.46C694.207 365.719 695.918 365.278 697.494 364.518C699.071 363.758 700.482 362.694 701.647 361.389L768.537 289.74C770.927 287.371 772.278 284.149 772.292 280.784C772.307 277.419 770.984 274.186 768.615 271.796L768.581 271.762Z" fill="#222222"/>
+							<path d="M851.786 250.831L851.663 250.708L838.075 237.258C837.279 236.465 836.333 235.837 835.294 235.411C834.254 234.985 833.14 234.769 832.016 234.776C830.195 234.778 828.421 235.352 826.945 236.418C826.945 236.247 826.968 236.081 826.98 235.934C827.529 232.461 826.796 228.907 824.919 225.934C821.925 221.899 818.638 218.09 815.085 214.538L815.053 214.506C805.12 204.976 793.446 197.446 780.668 192.326C773.99 189.585 766.84 188.177 759.622 188.182C750.277 188.098 741.197 191.278 733.948 197.175C731.884 199.146 730.003 201.298 728.325 203.606C727.524 204.713 727.101 206.048 727.119 207.414C727.138 208.779 727.596 210.103 728.427 211.187C729.258 212.271 730.416 213.058 731.73 213.432C733.044 213.805 734.443 213.744 735.72 213.257C736.832 212.842 737.968 212.494 739.122 212.215C741.525 211.706 743.99 211.553 746.438 211.759C751.512 212.288 756.375 214.072 760.589 216.949C762.952 218.939 764.831 221.439 766.085 224.261C767.339 227.084 767.936 230.155 767.829 233.241C766.068 238.256 763.378 242.895 759.899 246.913C758.971 248.136 758.519 249.653 758.625 251.184C758.73 252.715 759.387 254.156 760.474 255.24L774.118 268.883C775.264 270.033 776.808 270.699 778.43 270.744C780.053 270.79 781.632 270.212 782.841 269.129C786.699 265.684 792.575 260.489 794.629 259.217C796.385 258.042 798.373 257.258 800.458 256.917C802.011 256.764 803.574 257.094 804.934 257.861C804.941 257.928 804.934 257.997 804.913 258.062C804.891 258.127 804.857 258.186 804.812 258.237L804.09 258.923L803.971 259.034C802.368 260.631 801.464 262.8 801.46 265.063C801.456 267.326 802.351 269.498 803.948 271.101L803.991 271.143L817.575 284.589C818.371 285.382 819.316 286.009 820.356 286.434C821.396 286.86 822.51 287.075 823.633 287.067C825.89 287.071 828.057 286.188 829.668 284.609L851.674 262.872C851.75 262.797 851.825 262.718 851.896 262.638C853.373 261.02 854.182 258.903 854.161 256.713C854.141 254.522 853.292 252.421 851.786 250.831Z" fill="#222222"/>
+							<path d="M582.28 607.041H529.959C525.202 607.041 520.639 605.151 517.275 601.787C513.911 598.423 512.021 593.86 512.021 589.102V536.782C512.021 536.585 511.982 536.391 511.907 536.21C511.832 536.028 511.722 535.863 511.583 535.725C511.444 535.586 511.279 535.476 511.098 535.401C510.917 535.326 510.722 535.287 510.526 535.287H476.144C469.8 535.287 463.717 537.807 459.231 542.292C454.746 546.778 452.226 552.861 452.226 559.205V678.795C452.226 685.138 454.746 691.222 459.231 695.708C463.717 700.193 469.8 702.713 476.144 702.713H559.857C566.2 702.713 572.284 700.193 576.77 695.708C581.255 691.222 583.775 685.138 583.775 678.795V608.536C583.775 608.34 583.736 608.145 583.661 607.964C583.586 607.782 583.476 607.618 583.337 607.479C583.198 607.34 583.033 607.23 582.852 607.155C582.671 607.08 582.476 607.041 582.28 607.041V607.041ZM547.898 666.836H488.103C486.517 666.836 484.996 666.206 483.874 665.085C482.753 663.963 482.123 662.442 482.123 660.857C482.123 659.271 482.753 657.75 483.874 656.628C484.996 655.507 486.517 654.877 488.103 654.877H547.898C549.484 654.877 551.005 655.507 552.126 656.628C553.247 657.75 553.877 659.271 553.877 660.857C553.877 662.442 553.247 663.963 552.126 665.085C551.005 666.206 549.484 666.836 547.898 666.836ZM547.898 636.938H488.103C486.517 636.938 484.996 636.308 483.874 635.187C482.753 634.066 482.123 632.545 482.123 630.959C482.123 629.373 482.753 627.852 483.874 626.731C484.996 625.609 486.517 624.979 488.103 624.979H547.898C549.484 624.979 551.005 625.609 552.126 626.731C553.247 627.852 553.877 629.373 553.877 630.959C553.877 632.545 553.247 634.066 552.126 635.187C551.005 636.308 549.484 636.938 547.898 636.938Z" fill="#222222"/>
+							<path d="M578.999 593.808L525.254 540.063C525.149 539.959 525.017 539.888 524.872 539.86C524.727 539.831 524.578 539.846 524.441 539.902C524.305 539.959 524.189 540.054 524.106 540.176C524.024 540.299 523.98 540.443 523.979 540.59V589.103C523.979 590.688 524.61 592.209 525.731 593.331C526.852 594.452 528.373 595.082 529.959 595.082H578.471C578.619 595.081 578.763 595.037 578.885 594.955C579.007 594.873 579.103 594.756 579.159 594.62C579.215 594.484 579.23 594.334 579.202 594.19C579.173 594.045 579.102 593.912 578.998 593.808L578.999 593.808Z" fill="#222222"/>
+							<path d="M768 625C795.614 625 818 602.614 818 575C818 547.386 795.614 525 768 525C740.386 525 718 547.386 718 575C718 602.614 740.386 625 768 625Z" fill="white"/>
+							<path d="M771.938 572.023C771.546 572.023 771.162 571.906 770.836 571.688C770.51 571.47 770.255 571.16 770.105 570.798C769.955 570.435 769.915 570.036 769.992 569.651C770.069 569.266 770.258 568.912 770.535 568.635L775.086 564.084L770.535 559.533C770.163 559.161 769.954 558.656 769.954 558.13C769.954 557.604 770.163 557.099 770.535 556.727C770.907 556.355 771.412 556.146 771.938 556.146C772.465 556.146 772.97 556.355 773.342 556.727L779.296 562.681C779.48 562.865 779.626 563.084 779.726 563.325C779.826 563.565 779.877 563.824 779.877 564.084C779.877 564.345 779.826 564.603 779.726 564.844C779.626 565.084 779.48 565.303 779.296 565.487L773.342 571.442C773.158 571.626 772.939 571.772 772.698 571.872C772.457 571.972 772.199 572.023 771.938 572.023Z" fill="#222222"/>
+							<path d="M740.184 577.977C739.923 577.977 739.665 577.926 739.424 577.826C739.183 577.726 738.965 577.58 738.78 577.396C738.596 577.211 738.45 576.993 738.35 576.752C738.25 576.511 738.199 576.253 738.199 575.992V574.008C738.215 570.855 739.473 567.836 741.702 565.607C743.93 563.377 746.949 562.117 750.101 562.1H775.908C776.434 562.1 776.939 562.309 777.311 562.681C777.683 563.053 777.892 563.558 777.892 564.084C777.892 564.611 777.683 565.115 777.311 565.488C776.939 565.86 776.434 566.069 775.908 566.069H750.107C748.004 566.081 745.991 566.923 744.505 568.41C743.019 569.897 742.179 571.911 742.168 574.014V575.992C742.168 576.253 742.117 576.511 742.017 576.752C741.918 576.993 741.771 577.211 741.587 577.396C741.403 577.58 741.184 577.726 740.943 577.826C740.702 577.926 740.444 577.977 740.184 577.977V577.977Z" fill="#222222"/>
+							<path d="M756.061 593.854C755.801 593.855 755.542 593.803 755.302 593.704C755.061 593.604 754.842 593.458 754.658 593.273L748.704 587.319C748.52 587.135 748.373 586.916 748.274 586.675C748.174 586.434 748.123 586.176 748.123 585.916C748.123 585.655 748.174 585.397 748.274 585.156C748.373 584.915 748.52 584.697 748.704 584.512L754.658 578.558C755.03 578.187 755.535 577.978 756.061 577.978C756.587 577.979 757.091 578.188 757.463 578.56C757.835 578.932 758.044 579.436 758.045 579.962C758.045 580.488 757.836 580.993 757.465 581.365L752.914 585.916L757.465 590.466C757.742 590.744 757.931 591.097 758.008 591.482C758.084 591.867 758.045 592.266 757.895 592.629C757.745 592.992 757.49 593.302 757.164 593.52C756.838 593.738 756.454 593.854 756.061 593.854Z" fill="#222222"/>
+							<path d="M752.092 587.9C751.566 587.9 751.061 587.691 750.689 587.319C750.317 586.947 750.107 586.442 750.107 585.916C750.107 585.389 750.317 584.884 750.689 584.512C751.061 584.14 751.566 583.931 752.092 583.931H777.893C779.995 583.918 782.008 583.077 783.495 581.59C784.981 580.103 785.821 578.089 785.831 575.986V574.008C785.831 573.481 786.041 572.976 786.413 572.604C786.785 572.232 787.29 572.023 787.816 572.023C788.342 572.023 788.847 572.232 789.219 572.604C789.592 572.976 789.801 573.481 789.801 574.008V575.992C789.785 579.145 788.526 582.164 786.298 584.393C784.069 586.623 781.051 587.883 777.899 587.9L752.092 587.9Z" fill="#222222"/>
+						</svg>
 					</div>
-				</div> : ""
-			}
-			{
-				(result && result !== "loading" && usersData && authUser) ?
-				<Result data={result} setDataToShare={setDataToShare} usersName={usersData.name} usersUID={authUser.uid}/> : ""
-			}
-			{
-				canTakeTest === 2 ?
-				<div className="message">
-					<div className="sub-container">
-						<h2>You can take the test again in <span>{lastTestTimeDisplay}</span></h2>
+					<div className="section">
+						<h3>How well do your current product management skills align with the most desirable product management jobs?</h3>
+						<p>This test will identify areas in which you have attained a high level of knowledge. Additionally, it will identify areas where you may have blind spots that prevent you from making the most informed decisions. The test includes visual examples of situations that product managers and analysts face, as well as a list of useful reading recommendations that make entering the profession easier.</p>
 					</div>
-				</div> : ""
-			}
+				</div>
+			</section>
+			<section className="no-padding-top">
+				<CallToAction centered={true}/>
+			</section>
 		</StyledHome>
 	)
 
