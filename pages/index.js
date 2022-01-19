@@ -44,12 +44,12 @@ const Home = () => {
 				<meta name="viewport" content="initial-scale=1.0, width=device-width" key="viewport"/>
 			</Head>
 			<header>
-				<a href="/" className="title">qui<span>zzs</span></a>
+				<Link href="/"><a className="title">qui<span>zzs</span></a></Link>
 			</header>
 			<div className="intro">
 				<div className="section">
 					<h1>Product Management Skills Assessment Test</h1>
-					<h2>The first AI-based test that assists you in scoring and evaluating your abilities prior to applying to top product companies. It's free and only takes 45 minutes.</h2>
+					<h2>The first AI-based test that assists you in scoring and evaluating your abilities prior to applying to top product companies. It&apos;s free and only takes 45 minutes.</h2>
 					<CallToAction/>
 				</div>
 				<div className="section">

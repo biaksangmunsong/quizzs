@@ -1,4 +1,5 @@
 import { useState } from "react"
+import Link from "next/link"
 import { db } from "../fbinit"
 import { doc, setDoc } from "firebase/firestore"
 import StyledForm from "../styles/StyledForm"
@@ -43,7 +44,7 @@ const Form = ({userForm, setUserForm, setUserDetails}) => {
     
     return (
         <StyledForm>
-            <div className="title"><a href="/">qui<span>zzs</span></a></div>
+            <div className="title"><Link href="/"><a>qui<span>zzs</span></a></Link></div>
             <form onSubmit={handleFormSubmit}>
                 <button type="button" onClick={() => window.history.back()}>
                     <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
